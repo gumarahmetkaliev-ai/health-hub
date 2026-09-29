@@ -1,120 +1,84 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { ChatPanel } from "@/components/ai/chat-panel";
+import { LangSwitch } from "@/components/ai/lang-switch";
+import type { AIMode, Lang } from "@/lib/ai-types";
+import { EmergencyBar } from "@/components/emergency-bar";
 
-type Msg = { role: "user" | "assistant"; content: string };
-
-const STARTERS = [
-  "Что такое артериальное давление?",
-  "Где трекер воды?",
-  "Когда при ожоге звонить 103?",
-  "Чем растяжение отличается от перелома — общими словами?",
+const ACTIONS: { label: string; mode: AIMode; starters: string[] }[] = [
+  {
+    label: "Проверить симптомы",
+    mode: "symptom",
+    starters: [
+      "Головная боль 2 дня, слабость, нет температуры",
+      "Кашель и боль в груди при вдохе 3 недели",
+      "Сильная усталость и сердцебиение",
+    ],
+  },
+  { label: "Задать вопрос", mode: "chat", starters: ["Что такое ПЦР?", "Нормальное давление?"] },
+  { label: "Первая помощь", mode: "first-aid", starters: ["Что делать при ожоге?", "Что делать при кровотечении?"] },
+  { label: "Лекарства", mode: "medication", starters: ["Ибупрофен", "Парацетамол"] },
+  { label: "Понять анализ", mode: "lab", starters: ["Глюкоза 6.2 ммоль/л, 3.9–6.1"] },
+  { label: "Объяснить термин", mode: "term", starters: ["Что такое тахикардия?", "Гипертония простыми словами"] },
+  { label: "Подготовиться к врачу", mode: "doctor-prep", starters: ["Подготовиться к терапетку"] },
+  { label: "Здоровые привычки", mode: "coach", starters: ["Как пить достаточную воду?", "Сон 7 часов"] },
 ];
 
-export default function AIPage() {
-  const [messages, setMessages] = useState<Msg[]>([
-    {
-      role: "assistant",
-      content:
-        "Я справочный ассистент Health Hub. Могу объяснить термины, общие сведения о здоровье и подсказать раздел приложения. Не ставлю диагнозы, не назначаю лекарства и не советую менять лечение.",
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function send(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || pending) return;
-    const next = [...messages, { role: "user" as const, content: trimmed }];
-    setMessages(next);
-    setInput("");
-    setPending(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Не удалось получить ответ");
-      setMessages([...next, { role: "assistant", content: data.reply }]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка сети");
-    } finally {
-      setPending(false);
-    }
-  }
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    void send(input);
-  }
+export default function AIHomePage() {
+  const [selected, setSelected] = useState<AIMode>("symptom");
+  const [lang, setLang] = useState<Lang>("ru");
+  const active = ACTIONS.find((a) => a.mode === selected)!;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Ассистент</h1>
-        <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Без регистрации. Ключ API не вводится в браузере. При боли в груди, сильном кровотечении, потере сознания —{" "}
-          <Link href="/first-aid" className="text-[var(--accent)]">
-            103 / 112
-          </Link>
-          .
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">AI Health Assistant</h1>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--fg-muted)]">
+            Ассистент без регистрации: анализ симптомов, возможные причины, оценка срочности, red flags, справка о лекарствах и анализах, подготовка к врачу. Не ставит диагноз и не заменяет врача.
+          </p>
+        </div>
+        <LangSwitch value={lang} onChange={setLang} />
       </div>
 
+      <EmergencyBar />
+
       <div className="flex flex-wrap gap-2">
-        {STARTERS.map((s) => (
+        {ACTIONS.map((a) => (
           <button
-            key={s}
+            key={a.mode}
             type="button"
-            onClick={() => void send(s)}
-            className="rounded-full bg-[var(--bg-soft)] px-3 py-1.5 text-xs"
+            onClick={() => setSelected(a.mode)}
+            className={`rounded-2xl border px-4 py-2.5 text-sm transition ${
+              selected === a.mode
+                ? "border-[var(--ai)] bg-[color-mix(in_srgb,var(--ai)_16%,transparent)] text-[var(--ai)]"
+                : "border-[var(--line)] text-[var(--fg-muted)] hover:bg-[var(--bg-soft)]"
+            }`}
           >
-            {s}
+            {a.label}
           </button>
         ))}
       </div>
 
-      <div className="card flex min-h-[420px] flex-col p-4">
-        <div className="flex-1 space-y-3 overflow-y-auto">
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm ${
-                m.role === "user"
-                  ? "ml-auto bg-[var(--accent)] text-white"
-                  : "bg-[var(--bg-soft)]"
-              }`}
-            >
-              {m.content}
-            </div>
-          ))}
-          {pending ? (
-            <div className="rounded-2xl bg-[var(--bg-soft)] px-4 py-3 text-sm text-[var(--fg-muted)]">
-              Думаю…
-            </div>
-          ) : null}
-        </div>
-        {error ? <p className="mt-2 text-xs text-[var(--aid)]">{error}</p> : null}
-        <form onSubmit={onSubmit} className="mt-3 flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Спросите термин или как найти раздел"
-            className="flex-1 rounded-2xl border border-[var(--line)] bg-transparent px-3 py-2 text-sm"
-          />
-          <button
-            disabled={pending}
-            className="rounded-2xl bg-[var(--ai)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
-            Отправить
-          </button>
-        </form>
+      <div className="card p-5">
+        <h2 className="mb-3 text-sm text-[var(--fg-muted)]">{active.label}</h2>
+        <ChatPanel
+          mode={active.mode}
+          lang={lang}
+          starters={active.starters}
+        />
       </div>
+
+      <div className="text-xs text-[var(--fg-muted)]">
+        Вопросы и ответы сохраняются локально в браузере. API key не хранится в localStorage и не
+        попадает в клиентский код. При опасных симптомах сразу звоните <strong>103</strong> или{" "}
+        <strong>112</strong>.
+      </div>
+      <Link href="/" className="text-sm text-[var(--accent)]">
+        ← На обзор Health Hub
+      </Link>
     </div>
   );
 }
