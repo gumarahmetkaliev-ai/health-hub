@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f4f6f4;
+  --bg-elev: #ffffff;
+  --bg-soft: #eef3ef;
+  --fg: #12201a;
+  --fg-muted: #5b6b64;
+  --line: rgba(18, 32, 26, 0.08);
+  --accent: #0f8a62;
+  --accent-2: #1aa37a;
+  --water: #2a7de1;
+  --activity: #e07a2f;
+  --aid: #d4483a;
+  --ai: #6b5ce7;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+  --shadow: 0 10px 30px -18px rgba(18, 32, 26, 0.35);
+}
+
+.dark {
+  --bg: #0b0f0d;
+  --bg-elev: #141a17;
+  --bg-soft: #1b231f;
+  --fg: #e8f0ec;
+  --fg-muted: #93a39b;
+  --line: rgba(232, 240, 236, 0.08);
+  --accent: #3dca97;
+  --accent-2: #2aa87a;
+  --water: #5aa4f2;
+  --activity: #f0a05a;
+  --aid: #f07167;
+  --ai: #9b8cff;
+  --shadow: 0 16px 40px -24px rgba(0, 0, 0, 0.7);
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100%;
+}
+
+body {
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 55%),
+    radial-gradient(900px 500px at 110% 0%, color-mix(in srgb, var(--water) 12%, transparent), transparent 50%);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.card {
+  background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.45s ease both;
+}
